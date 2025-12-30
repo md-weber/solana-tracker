@@ -28,13 +28,13 @@ export const getInvestments = async () => {
   return data.map(inv => ({
     id: inv.id,
     date: inv.date,
-    amount: parseFloat(inv.amount),
-    solPrice: parseFloat(inv.sol_price || 0),
-    solAmount: parseFloat(inv.sol_amount),
-    solStaked: parseFloat(inv.sol_staked),
-    stakingFee: parseFloat(inv.staking_fee),
-    currentStaked: parseFloat(inv.current_staked),
-    unstakedSol: parseFloat(inv.unstaked_sol)
+    amountEUR: parseFloat(inv.amount_eur || inv.amount || 0),
+    solReceived: parseFloat(inv.sol_received || inv.sol_amount || 0),
+    solStakedNow: parseFloat(inv.sol_staked_now || inv.current_staked || 0),
+    solUnstakedNow: parseFloat(inv.sol_unstaked_now || inv.unstaked_sol || 0),
+    stakingFee: parseFloat(inv.staking_fee || 0),
+    bitvavoFees: parseFloat(inv.bitvavo_fees || 0),
+    validator: inv.validator || 'Unknown'
   }));
 };
 
@@ -43,14 +43,14 @@ export const getInvestments = async () => {
  */
 export const addInvestment = async (investment) => {
   const dbInvestment = {
-    date: investment.date,
-    amount: investment.amount,
-    sol_price: investment.solPrice,
-    sol_amount: investment.solAmount,
-    sol_staked: investment.solStaked,
+    amount_eur: investment.amountEUR,
+    sol_received: investment.solReceived,
+    sol_staked_now: investment.solStakedNow,
+    sol_unstaked_now: investment.solUnstakedNow,
     staking_fee: investment.stakingFee,
-    current_staked: investment.currentStaked,
-    unstaked_sol: investment.unstakedSol
+    bitvavo_fees: investment.bitvavoFees,
+    validator: investment.validator,
+    date: investment.date
   };
 
   const { data, error } = await supabase
@@ -64,17 +64,16 @@ export const addInvestment = async (investment) => {
     throw error;
   }
   
-  // Transform back to app format
   return {
     id: data.id,
     date: data.date,
-    amount: parseFloat(data.amount),
-    solPrice: parseFloat(data.sol_price || 0),
-    solAmount: parseFloat(data.sol_amount),
-    solStaked: parseFloat(data.sol_staked),
-    stakingFee: parseFloat(data.staking_fee),
-    currentStaked: parseFloat(data.current_staked),
-    unstakedSol: parseFloat(data.unstaked_sol)
+    amountEUR: parseFloat(data.amount_eur || 0),
+    solReceived: parseFloat(data.sol_received || 0),
+    solStakedNow: parseFloat(data.sol_staked_now || 0),
+    solUnstakedNow: parseFloat(data.sol_unstaked_now || 0),
+    stakingFee: parseFloat(data.staking_fee || 0),
+    bitvavoFees: parseFloat(data.bitvavo_fees || 0),
+    validator: data.validator || 'Unknown'
   };
 };
 
@@ -83,14 +82,14 @@ export const addInvestment = async (investment) => {
  */
 export const updateInvestment = async (id, investment) => {
   const dbInvestment = {
-    date: investment.date,
-    amount: investment.amount,
-    sol_price: investment.solPrice,
-    sol_amount: investment.solAmount,
-    sol_staked: investment.solStaked,
+    amount_eur: investment.amountEUR,
+    sol_received: investment.solReceived,
+    sol_staked_now: investment.solStakedNow,
+    sol_unstaked_now: investment.solUnstakedNow,
     staking_fee: investment.stakingFee,
-    current_staked: investment.currentStaked,
-    unstaked_sol: investment.unstakedSol,
+    bitvavo_fees: investment.bitvavoFees,
+    validator: investment.validator,
+    date: investment.date,
     updated_at: new Date().toISOString()
   };
 
@@ -109,13 +108,13 @@ export const updateInvestment = async (id, investment) => {
   return {
     id: data.id,
     date: data.date,
-    amount: parseFloat(data.amount),
-    solPrice: parseFloat(data.sol_price || 0),
-    solAmount: parseFloat(data.sol_amount),
-    solStaked: parseFloat(data.sol_staked),
-    stakingFee: parseFloat(data.staking_fee),
-    currentStaked: parseFloat(data.current_staked),
-    unstakedSol: parseFloat(data.unstaked_sol)
+    amountEUR: parseFloat(data.amount_eur || 0),
+    solReceived: parseFloat(data.sol_received || 0),
+    solStakedNow: parseFloat(data.sol_staked_now || 0),
+    solUnstakedNow: parseFloat(data.sol_unstaked_now || 0),
+    stakingFee: parseFloat(data.staking_fee || 0),
+    bitvavoFees: parseFloat(data.bitvavo_fees || 0),
+    validator: data.validator || 'Unknown'
   };
 };
 

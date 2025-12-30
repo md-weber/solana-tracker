@@ -10,8 +10,8 @@ export const SummaryCards = ({ latestData, totalProfit, profitPercentage, curren
           <Wallet className="w-5 h-5" />
           <span className="text-sm font-medium">Total Invested</span>
         </div>
-        <p className="text-3xl font-bold text-white">€{latestData.totalInvested}</p>
-        <p className="text-xs text-purple-200 mt-1">Fees: €{latestData.feesValue.toFixed(2)}</p>
+        <p className="text-3xl font-bold text-white">€{latestData.totalInvestedEUR}</p>
+        <p className="text-xs text-purple-200 mt-1">Fees: €{latestData.stakingFeesValue.toFixed(2)}</p>
       </div>
 
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
@@ -31,7 +31,7 @@ export const SummaryCards = ({ latestData, totalProfit, profitPercentage, curren
           <span className="text-sm font-medium">Staking Rewards</span>
         </div>
         <p className="text-3xl font-bold text-white">€{latestData.rewardsValue.toFixed(2)}</p>
-        <p className="text-sm text-yellow-200 mt-1">{latestData.rewardsSol.toFixed(6)} SOL</p>
+        <p className="text-sm text-yellow-200 mt-1">{latestData.rewardsSOL.toFixed(6)} SOL</p>
       </div>
 
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
@@ -39,7 +39,7 @@ export const SummaryCards = ({ latestData, totalProfit, profitPercentage, curren
           <Coins className="w-5 h-5" />
           <span className="text-sm font-medium">Total SOL Holdings</span>
         </div>
-        <p className="text-3xl font-bold text-white">{latestData.totalSol}</p>
+        <p className="text-3xl font-bold text-white">{latestData.totalCurrentSOL}</p>
         <p className="text-sm text-indigo-200 mt-1">
           Price: €{currentPrice.toFixed(2)}
           {loading && <span className="ml-2 text-xs">⟳</span>}

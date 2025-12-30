@@ -1,8 +1,8 @@
-/// src/utils/calculations.js
-// All calculation logic in one place
+// src/utils/calculations.js
+// Simplified calculation logic - no more manual math!
 
 /**
- * Process raw investment data and calculate cumulative values
+ * Process raw investment data with simplified inputs
  * @param {Array} investments - Array of investment objects
  * @param {number} currentPrice - Current SOL price in EUR
  * @returns {Array} Processed data with calculated fields
@@ -10,48 +10,88 @@
 export const processInvestmentData = (investments, currentPrice) => {
   return investments.map((inv, idx) => {
     const prevInvestments = investments.slice(0, idx);
-    
-    // Calculate cumulative totals
-    const totalInvested = [...prevInvestments, inv].reduce((sum, i) => sum + i.amount, 0);
-    const totalSolPurchased = [...prevInvestments, inv].reduce((sum, i) => sum + i.solAmount, 0);
-    const totalFees = [...prevInvestments, inv].reduce((sum, i) => sum + i.stakingFee, 0);
-    
-    // Use currentStaked from the current entry if available, otherwise calculate cumulative
-    const cumulativeStaked = inv.currentStaked > 0
-      ? inv.currentStaked 
-      : [...prevInvestments, inv].reduce((sum, i) => sum + i.solStaked, 0);
-    
-    // Calculate total unstaked SOL
-    // If unstakedSol is provided in the data, use it; otherwise calculate it
-    const totalUnstaked = inv.unstakedSol !== undefined 
-      ? inv.unstakedSol 
-      : totalSolPurchased - cumulativeStaked - totalFees;
-    
-    // Staking rewards = current staked - originally staked
-    const totalOriginallyStaked = [...prevInvestments, inv].reduce((sum, i) => sum + i.solStaked, 0);
-    const stakedRewards = cumulativeStaked - totalOriginallyStaked;
-    
+
+    // Calculate cumulative EUR invested (including all fees)
+    const totalInvestedEUR = [...prevInvestments, inv].reduce(
+      (sum, i) => sum + i.amountEUR + i.bitvavoFees,
+      0,
+    );
+
+    // Calculate cumulative SOL purchased
+    const totalSolPurchased = [...prevInvestments, inv].reduce(
+      (sum, i) => sum + i.solReceived,
+      0,
+    );
+
+    // Calculate cumulative fees paid (in SOL)
+    const totalStakingFees = [...prevInvestments, inv].reduce(
+      (sum, i) => sum + i.stakingFee,
+      0,
+    );
+
+    // Calculate cumulative Bitvavo fees (in EUR)
+    const totalBitvavoFees = [...prevInvestments, inv].reduce(
+      (sum, i) => sum + i.bitvavoFees,
+      0,
+    );
+
+    // Current balances (from wallet snapshots)
+    const currentStaked = inv.solStakedNow;
+    const currentUnstaked = inv.solUnstakedNow;
+    const totalCurrentSOL = currentStaked + currentUnstaked;
+
+    // Calculate staking rewards
+    // Rewards = current staked - (all SOL purchased - unstaked - fees)
+    const totalSolThatShouldBeStaked =
+      totalSolPurchased - currentUnstaked - totalStakingFees;
+    const stakedRewards = Math.max(
+      0,
+      currentStaked - totalSolThatShouldBeStaked,
+    );
+
     // Calculate EUR values
-    const stakedValue = cumulativeStaked * currentPrice;
-    const unstakedValue = totalUnstaked * currentPrice;
-    const portfolioValue = stakedValue + unstakedValue;
+    const stakedValue = currentStaked * currentPrice;
+    const unstakedValue = currentUnstaked * currentPrice;
+    const portfolioValue = (currentStaked + currentUnstaked) * currentPrice;
     const rewardsValue = stakedRewards * currentPrice;
-    const feesValue = totalFees * currentPrice;
+    const stakingFeesValue = totalStakingFees * currentPrice;
+
+    // Calculate effective cost per SOL (including all fees)
+    const effectiveCostPerSOL =
+      totalSolPurchased > 0 ? totalInvestedEUR / totalSolPurchased : 0;
 
     return {
       date: inv.date,
-      totalInvested: parseFloat(totalInvested.toFixed(2)),
+      validator: inv.validator,
+
+      // EUR tracking
+      monthlyInvestedEUR: inv.amountEUR,
+      monthlyBitvavoFees: inv.bitvavoFees,
+      totalInvestedEUR: parseFloat(totalInvestedEUR.toFixed(2)),
+      totalBitvavoFeesEUR: parseFloat(totalBitvavoFees.toFixed(2)),
+
+      // SOL tracking
+      monthlySolReceived: parseFloat(inv.solReceived.toFixed(8)),
+      totalSolPurchased: parseFloat(totalSolPurchased.toFixed(8)),
+      currentStakedSOL: parseFloat(currentStaked.toFixed(8)),
+      currentUnstakedSOL: parseFloat(currentUnstaked.toFixed(8)),
+      totalCurrentSOL: parseFloat(totalCurrentSOL.toFixed(8)),
+      rewardsSOL: parseFloat(stakedRewards.toFixed(8)),
+
+      // Fees in SOL
+      monthlyStakingFee: parseFloat(inv.stakingFee.toFixed(8)),
+      totalStakingFeesSOL: parseFloat(totalStakingFees.toFixed(8)),
+
+      // Portfolio values
       portfolioValue: parseFloat(portfolioValue.toFixed(2)),
       stakedValue: parseFloat(stakedValue.toFixed(2)),
       unstakedValue: parseFloat(unstakedValue.toFixed(2)),
       rewardsValue: parseFloat(rewardsValue.toFixed(2)),
-      feesValue: parseFloat(feesValue.toFixed(2)),
-      totalSol: parseFloat(totalSolPurchased.toFixed(6)),
-      stakedSol: parseFloat(cumulativeStaked.toFixed(6)),
-      unstakedSol: parseFloat(totalUnstaked.toFixed(6)),
-      rewardsSol: parseFloat(stakedRewards.toFixed(6)),
-      feesSol: parseFloat(totalFees.toFixed(6)),
-      monthlyInvest: inv.amount
+      stakingFeesValue: parseFloat(stakingFeesValue.toFixed(2)),
+
+      // Metrics
+      effectiveCostPerSOL: parseFloat(effectiveCostPerSOL.toFixed(2)),
+      currentPricePerSOL: parseFloat(currentPrice.toFixed(2)),
     };
   });
 };
@@ -62,10 +102,61 @@ export const processInvestmentData = (investments, currentPrice) => {
  * @returns {Object} Total profit and profit percentage
  */
 export const calculateProfitMetrics = (latestData) => {
-  const totalProfit = latestData.portfolioValue - latestData.totalInvested;
-  const profitPercentage = ((totalProfit / latestData.totalInvested) * 100).toFixed(2);
-  
+  const totalProfit = latestData.portfolioValue - latestData.totalInvestedEUR;
+  const profitPercentage =
+    latestData.totalInvestedEUR > 0
+      ? ((totalProfit / latestData.totalInvestedEUR) * 100).toFixed(2)
+      : 0;
+
   return { totalProfit, profitPercentage };
+};
+
+/**
+ * Calculate actual realized APY based on staking rewards
+ * @param {Array} processedData - All processed investment data
+ * @returns {Object} APY calculations
+ */
+export const calculateRealizedAPY = (processedData) => {
+  if (processedData.length === 0) {
+    return { annualizedAPY: 0, dailyRate: 0, daysStaked: 0 };
+  }
+
+  const firstEntry = processedData[0];
+  const latestEntry = processedData[processedData.length - 1];
+
+  // Calculate days between first and last entry
+  const firstDate = new Date(firstEntry.date);
+  const lastDate = new Date(latestEntry.date);
+  const daysStaked = Math.max(
+    1,
+    Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24)),
+  );
+
+  // Get total staking rewards in SOL
+  const totalRewardsSOL = latestEntry.rewardsSOL;
+
+  // Calculate average staked amount (simple average of all staked amounts)
+  const avgStakedSOL =
+    processedData.reduce((sum, entry) => sum + entry.currentStakedSOL, 0) /
+    processedData.length;
+
+  if (avgStakedSOL === 0 || totalRewardsSOL === 0 || daysStaked === 0) {
+    return { annualizedAPY: 0, dailyRate: 0, daysStaked };
+  }
+
+  // Calculate daily rate: (total rewards / average staked) / days
+  const dailyRate = totalRewardsSOL / avgStakedSOL / daysStaked;
+
+  // Annualize with compound interest: (1 + dailyRate)^365 - 1
+  const annualizedAPY = (Math.pow(1 + dailyRate, 365) - 1) * 100;
+
+  return {
+    annualizedAPY: parseFloat(annualizedAPY.toFixed(2)),
+    dailyRate: parseFloat((dailyRate * 100).toFixed(4)),
+    daysStaked,
+    totalRewardsSOL,
+    avgStakedSOL,
+  };
 };
 
 /**
@@ -75,8 +166,8 @@ export const calculateProfitMetrics = (latestData) => {
  */
 export const createPieChartData = (latestData) => {
   return [
-    { name: 'Staked SOL', value: latestData.stakedValue },
-    { name: 'Unstaked SOL', value: latestData.unstakedValue },
-    { name: 'Staking Rewards', value: latestData.rewardsValue }
+    { name: "Staked SOL", value: latestData.stakedValue },
+    { name: "Unstaked SOL", value: latestData.unstakedValue },
+    { name: "Staking Rewards", value: latestData.rewardsValue },
   ];
 };
