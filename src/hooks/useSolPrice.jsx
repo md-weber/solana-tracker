@@ -1,7 +1,4 @@
-// src/hooks/useSolPrice.jsx
-// Custom hook for fetching SOL price from CoinGecko
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 export const useSolPrice = (initialPrice) => {
   const [currentPrice, setCurrentPrice] = useState(initialPrice);
@@ -12,7 +9,7 @@ export const useSolPrice = (initialPrice) => {
     const fetchSolPrice = async () => {
       try {
         const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur'
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=eur",
         );
         const priceData = await response.json();
         if (priceData.solana && priceData.solana.eur) {
@@ -20,8 +17,8 @@ export const useSolPrice = (initialPrice) => {
           setError(null);
         }
       } catch (err) {
-        console.error('Error fetching SOL price:', err);
-        setError('Using cached price');
+        console.error("Error fetching SOL price:", err);
+        setError("Using cached price");
       } finally {
         setLoading(false);
       }

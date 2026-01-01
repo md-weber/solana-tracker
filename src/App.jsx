@@ -1,38 +1,16 @@
 import { useState, useEffect } from "react";
-import {
-  Coins,
-  Lock,
-  Unlock,
-  Plus,
-  Download,
-  Upload,
-  RefreshCw,
-  TrendingUp,
-} from "lucide-react";
+import { Coins, Plus, Download, Upload, RefreshCw } from "lucide-react";
 
 // Import services
 import { useSolPrice } from "./hooks/useSolPrice";
-import {
-  processInvestmentData,
-  calculateProfitMetrics,
-  createPieChartData,
-  calculateRealizedAPY,
-} from "./utils/calculations";
+import { getTransactions } from "./services/supabase";
+import TransactionForm from "./components/AddTransactionForm";
+import TransactionsTable from "./components/TransactionHistory";
+import PortfolioChart from "./components/PortfolioChart";
 import { SummaryCards } from "./components/SummaryCards";
-import { InvestmentTable } from "./components/InvestmentTable";
-import {
-  getInvestments,
-  addInvestment,
-  updateInvestment,
-  deleteInvestment,
-} from "./services/supabase";
-import { InvestmentChart } from "./components/InvestmentChart";
-import { PortfolioPie } from "./components/PortfolioPie";
-import { SOLBreakdown } from "./components/SOLBreakdown";
-import { AddInvestment } from "./components/AddInvestment";
 
 const App = () => {
-  const [investments, setInvestments] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState(null);
@@ -64,8 +42,8 @@ const App = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getInvestments();
-      setInvestments(data);
+      const data = await getTransactions();
+      setTransactions(data);
     } catch (err) {
       setError("Failed to load investments. Check your Supabase connection.");
       console.error(err);
@@ -73,33 +51,6 @@ const App = () => {
       setLoading(false);
     }
   };
-
-  // Process investment data
-  const processedData =
-    investments.length > 0
-      ? processInvestmentData(investments, currentPrice)
-      : [];
-
-  const latestData =
-    processedData.length > 0
-      ? processedData[processedData.length - 1]
-      : {
-          totalInvested: 0,
-          portfolioValue: 0,
-          stakedValue: 0,
-          unstakedValue: 0,
-          rewardsValue: 0,
-          feesValue: 0,
-          totalSol: 0,
-          stakedSol: 0,
-          unstakedSol: 0,
-          rewardsSol: 0,
-          feesSol: 0,
-        };
-
-  const { totalProfit, profitPercentage } = calculateProfitMetrics(latestData);
-  const pieData = createPieChartData(latestData);
-  const apyMetrics = calculateRealizedAPY(processedData);
 
   // Export data to JSON file
   const handleExport = () => {
@@ -129,11 +80,6 @@ const App = () => {
         if (data.investments && Array.isArray(data.investments)) {
           setSyncing(true);
 
-          // Import each investment
-          for (const inv of data.investments) {
-            await addInvestment(inv);
-          }
-
           await loadInvestments();
           alert(
             `Successfully imported ${data.investments.length} investments!`,
@@ -149,9 +95,12 @@ const App = () => {
     reader.readAsText(file);
   };
 
+  const latestTransaction =
+    transactions.data != null ? transactions.data[0] : [];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
+      <div className="min-h-screen bg-linear-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
         <div className="text-white text-xl">Loading your portfolio...</div>
       </div>
     );
@@ -202,14 +151,12 @@ const App = () => {
             </label>
           </div>
         </div>
-
         {/* Error message */}
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
             {error}
           </div>
         )}
-
         {/* Syncing indicator */}
         {syncing && (
           <div className="bg-blue-500/20 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
@@ -217,76 +164,31 @@ const App = () => {
             Syncing with Supabase...
           </div>
         )}
-
         {/* Add Investment Form */}
-        <AddInvestment
-          showForm={showForm}
-          editingId={editingId}
-          formData={formData}
-          syncing={syncing}
-          loadInvestments={loadInvestments}
-          setFormData={setFormData}
-          setSyncing={setSyncing}
-          setEditingId={setEditingId}
-          setEditingIndex={setEditingIndex}
-          setShowForm={setShowForm}
-        ></AddInvestment>
-
-        <SummaryCards
-          latestData={latestData}
-          totalProfit={totalProfit}
-          profitPercentage={profitPercentage}
-          currentPrice={currentPrice}
-          loading={priceLoading}
-          priceError={priceError}
-        />
-
-        {/* SOL Breakdown Cards */}
-        <SOLBreakdown
-          latestData={latestData}
-          apyMetrics={apyMetrics}
-        ></SOLBreakdown>
-
-        {/* Charts */}
-        {processedData.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <InvestmentChart processedData={processedData}></InvestmentChart>
-            <PortfolioPie pieData={pieData}></PortfolioPie>
-          </div>
+        {showForm && (
+          <TransactionForm currentSolPrice={currentPrice}></TransactionForm>
         )}
-
-        <InvestmentTable
-          investments={investments}
-          processedData={processedData}
-          currentPrice={currentPrice}
-          setFormData={setFormData}
-          setEditingIndex={setEditingIndex}
-          setEditingId={setEditingId}
-          setShowForm={setShowForm}
-        />
-
-        {/* Instructions */}
-        <div className="mt-6 bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-          <h3 className="text-lg font-semibold text-white mb-3">
-            ☁️ Supabase Sync Active
-          </h3>
-          <div className="text-purple-200 text-sm space-y-2">
-            <p>
-              Your data is automatically synced to Supabase (EU servers). You
-              can:
-            </p>
-            <ul className="list-disc list-inside ml-4 space-y-1">
-              <li>Access from any device with your Supabase credentials</li>
-              <li>Click "Refresh" to load latest data</li>
-              <li>Export for backup (recommended monthly)</li>
-              <li>Import to bulk-add historical data</li>
-            </ul>
-            <p className="mt-3 text-yellow-200">
-              💡 <strong>Tip:</strong> Just update "Current Staked SOL" each
-              month - rewards are auto-calculated!
-            </p>
-          </div>
-        </div>
+        {console.log(latestTransaction)}
+        {!loading && (
+          <SummaryCards
+            total_invested_eur={latestTransaction.total_invested_eur}
+            portfolio_sol_balance={latestTransaction.portfolio_sol_balance}
+            portfolio_staked_sol={latestTransaction.portfolio_staked_sol}
+            currentSolPrice={currentPrice}
+            currentLiveValue={
+              parseFloat(latestTransaction.portfolio_sol_balance) * currentPrice
+            }
+            currentPrice={latestTransaction.sol_price}
+            rewardsValue={latestTransaction.total_rewards_sol * currentPrice}
+            rewardsSol={latestTransaction.total_rewards_sol}
+            latestData={latestTransaction}
+          ></SummaryCards>
+        )}
+        <PortfolioChart
+          txns={transactions.data}
+          currentSolPrice={currentPrice}
+        ></PortfolioChart>
+        <TransactionsTable txns={transactions}></TransactionsTable>
       </div>
     </div>
   );

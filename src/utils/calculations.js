@@ -1,6 +1,3 @@
-// src/utils/calculations.js
-// Simplified calculation logic - no more manual math!
-
 /**
  * Process raw investment data with simplified inputs
  * @param {Array} investments - Array of investment objects

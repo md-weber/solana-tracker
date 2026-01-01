@@ -1,50 +1,83 @@
-// src/components/SummaryCards.jsx
-import React from 'react';
-import { TrendingUp, Wallet, Coins } from 'lucide-react';
+import { TrendingUp } from "lucide-react";
+export const SummaryCards = ({
+  total_invested_eur,
+  portfolio_sol_balance,
+  portfolio_staked_sol,
+  priceLoading,
+  currentLiveValue,
+  currentPrice,
+  rewardsValue,
+  rewardsSol,
+  latestData,
+}) => {
+  const gainLoss =
+    latestData.portfolio_value_eur - latestData.total_invested_eur;
+  const gainLossPercent =
+    latestData.total_invested_eur > 0
+      ? ((gainLoss / latestData.total_invested_eur) * 100).toFixed(2)
+      : 0;
 
-export const SummaryCards = ({ latestData, totalProfit, profitPercentage, currentPrice, loading, priceError }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-        <div className="flex items-center gap-2 text-purple-200 mb-2">
-          <Wallet className="w-5 h-5" />
-          <span className="text-sm font-medium">Total Invested</span>
+    <div>
+      <div className="m-4 grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="text-white/60 text-sm mb-1">Total Invested</div>
+          <div className="text-white text-2xl font-bold">
+            €{parseFloat(total_invested_eur || 0).toFixed(2)}
+          </div>
         </div>
-        <p className="text-3xl font-bold text-white">€{latestData.totalInvestedEUR}</p>
-        <p className="text-xs text-purple-200 mt-1">Fees: €{latestData.stakingFeesValue.toFixed(2)}</p>
-      </div>
+        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="text-white/60 text-sm mb-1">Total SOL</div>
+          <div className="text-cyan-300 text-2xl font-bold">
+            {parseFloat(portfolio_sol_balance || 0).toFixed(6)}
+          </div>
+        </div>
+        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="text-white/60 text-sm mb-1">Staked SOL</div>
+          <div className="text-green-300 text-2xl font-bold">
+            {parseFloat(portfolio_staked_sol || 0).toFixed(6)}
+          </div>
+        </div>
+        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="text-white/60 text-sm mt-3 mb-1">
+            Current Live Value
+            {priceLoading && <span className="ml-2">⟳</span>}
+          </div>
+          <div className="text-yellow-300 text-2xl font-bold">
+            €{currentLiveValue.toFixed(2)}
+          </div>
+          <div className="text-white/40 text-xs mt-1">
+            @ €{currentPrice.toFixed(2)}/SOL
+          </div>
+        </div>
 
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-        <div className="flex items-center gap-2 text-teal-200 mb-2">
-          <TrendingUp className="w-5 h-5" />
-          <span className="text-sm font-medium">Portfolio Value</span>
+        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-white/60 text-sm">Total Rewards</span>
+            <TrendingUp className="w-5 h-5 text-yellow-400" />
+          </div>
+          <div className="text-white text-3xl font-bold">
+            €{rewardsValue.toFixed(2)}
+          </div>
+          <div className="text-white/40 text-xs mt-1">
+            {rewardsSol.toFixed(8)} SOL
+          </div>
         </div>
-        <p className="text-3xl font-bold text-white">€{latestData.portfolioValue.toFixed(2)}</p>
-        <p className={`text-sm mt-1 ${totalProfit >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-          {totalProfit >= 0 ? '+' : ''}€{totalProfit.toFixed(2)} ({profitPercentage}%)
-        </p>
-      </div>
 
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-        <div className="flex items-center gap-2 text-yellow-200 mb-2">
-          <Coins className="w-5 h-5" />
-          <span className="text-sm font-medium">Staking Rewards</span>
+        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-white/60 text-sm">Gain/Loss</span>
+            <TrendingUp
+              className={`w-5 h-5 ${gainLoss >= 0 ? "text-green-400" : "text-red-400"}`}
+            />
+          </div>
+          <div
+            className={`text-3xl font-bold ${gainLoss >= 0 ? "text-green-400" : "text-red-400"}`}
+          >
+            €{gainLoss.toFixed(2)}
+          </div>
+          <div className="text-white/60 text-sm mt-1">{gainLossPercent}%</div>
         </div>
-        <p className="text-3xl font-bold text-white">€{latestData.rewardsValue.toFixed(2)}</p>
-        <p className="text-sm text-yellow-200 mt-1">{latestData.rewardsSOL.toFixed(6)} SOL</p>
-      </div>
-
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-        <div className="flex items-center gap-2 text-indigo-200 mb-2">
-          <Coins className="w-5 h-5" />
-          <span className="text-sm font-medium">Total SOL Holdings</span>
-        </div>
-        <p className="text-3xl font-bold text-white">{latestData.totalCurrentSOL}</p>
-        <p className="text-sm text-indigo-200 mt-1">
-          Price: €{currentPrice.toFixed(2)}
-          {loading && <span className="ml-2 text-xs">⟳</span>}
-          {priceError && <span className="ml-2 text-xs text-yellow-300">({priceError})</span>}
-        </p>
       </div>
     </div>
   );
